@@ -11,6 +11,7 @@ class Point
   end
 
   def move(direction)
+    # we only ever move one spot at a time to allow the chases to happen
     case direction
     when 'R'
       @x += 1
@@ -21,20 +22,24 @@ class Point
     when 'D'
       @y -= 1
     end
-    p "Move to (#{x},#{y})"
   end
 
   def chase(head)
     if ! cover?(head) && ! adjacent?(head)
+      # find the distance to the head, negative numbers are left and down, positve up and right
       a, b = distance_to(head)
+
+      # find the movement to make, can be directly added to current position for new position
       a, b = find_planck_movement(a,b)
       @x += a
       @y += b
     end
-    p "Chase to (#{x},#{y})"
   end
 
   def find_planck_movement(a,b)
+    # if the value is 0, nothing happens.
+    # if the value is 1, nothing happens.
+    # if the value is 2, we divide by 2 to get to 1 and preserve the sign
     a = a/2 if a.abs == 2
     b = b/2 if b.abs == 2
     return a,b
@@ -45,15 +50,13 @@ class Point
   end
 
   def cover?(point)
+    # are the two points in the same spot?
     x == point.x && y == point.y
   end
 
   def adjacent?(point)
+    # are the two points touching?
     (x - point.x).abs <= 1 && (y - point.y).abs <= 1 && ! cover?(point)
-  end
-
-  def diagonal?(point)
-    x != point.x && y != point.y
   end
 
   def to_s
@@ -85,40 +88,23 @@ INPUT
 
 input = File.read('day09.txt')
 
-# part 1
-POSITIONS = {}
-head = Point.new(0,0)
-tail = Point.new(0,0)
+def solve_bridge(knots: 2, moves: [])
+  positions = {}
 
-input.split("\n").each do |move|
-  direction, distance = move.match(/(\w) (\d+)/).captures
-  p move
-  distance.to_i.times do |_|
-    head.move(direction)
-    tail.chase(head)
-    POSITIONS[tail.to_s] = 1
-  end
-end
+  knots = Array.new(knots) { Point.new(0,0) }
 
-p "distinct locations Part 1: #{POSITIONS.size}"
-
-# part 2
-POSITIONS = {}
-head = Point.new(0,0)
-knots = Array.new(9) { |i| Point.new(0,0) }
-
-input.split("\n").each do |move|
-  direction, distance = move.match(/(\w) (\d+)/).captures
-  p move
-  distance.to_i.times do |_|
-    head.move(direction)
-    leader = head
-    knots.each do |k|
-      k.chase(leader)
-      leader = k
+  moves.split("\n").each do |move|
+    direction, distance = move.match(/(\w) (\d+)/).captures
+    distance.to_i.times do |_|
+      knots.first.move(direction)
+      knots.each_cons(2) do |segment|
+        segment.last.chase(segment.first)
+      end
+      positions[knots.last.to_s] = 1
     end
-    POSITIONS[knots.last.to_s] = 1
   end
+  return positions.size
 end
 
-p "distinct locations Part 2: #{POSITIONS.size}"
+p "Part 1 number of positions: #{solve_bridge(knots: 2, moves: input)}"
+p "Part 2 number of positions: #{solve_bridge(knots: 10, moves: input)}"
