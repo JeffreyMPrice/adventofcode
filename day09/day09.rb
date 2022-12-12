@@ -1,8 +1,29 @@
 #! /usr/bin/ruby
 
-require 'pry'
+class Rope
+  attr_accessor knots, tail_positions
+  def initialize(knots, moves)
+    @knots = Array.new(knots) { Knot.new(0, 0) }
+    @moves = moves
+    @tail_positions = {}
+  end
 
-class Point
+  def simulate
+    @moves.split("\n").each do |move|
+      direction, distance = move.match(/(\w) (\d+)/).captures
+      distance.to_i.times do |_|
+        @knots.first.move(direction)
+        @knots.each_cons(2) do |segment|
+          segment.last.chase(segment.first)
+        end
+        @tail_positions[@knots.last.to_s] = 1
+      end
+    end
+
+  end
+
+end
+class Knot
   attr_accessor :x, :y
 
   def initialize(a, b)
@@ -91,7 +112,7 @@ input = File.read('day09.txt')
 def solve_bridge(knots: 2, moves: [])
   positions = {}
 
-  knots = Array.new(knots) { Point.new(0,0) }
+  knots = Array.new(knots) { Knot.new(0, 0) }
 
   moves.split("\n").each do |move|
     direction, distance = move.match(/(\w) (\d+)/).captures
